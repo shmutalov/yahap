@@ -1,1 +1,1 @@
-extern crate majestic12;
+extern crate yahap;
