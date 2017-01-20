@@ -26,11 +26,11 @@ pub struct HtmlParser {
     keep_comments: bool,
 
     /// If true (default: false) then HTML for script tags 
-    /// themselves AND between them will be set to oHTML variable, otherwise it will be empty
+    /// themselves AND between them will be set to html variable, otherwise it will be empty
     /// but you can always set it later
     keep_scripts: bool,
 
-    /// If true (and either keep_comments or keep_scripts is true), then oHTML will be set
+    /// If true (and either keep_comments or keep_scripts is true), then html will be set
     /// to data BETWEEN tags excluding those tags themselves, as otherwise FULL HTML will be set, ie:
     /// '<!-- comments -->' but if this is set to true then only ' comments ' will be returned
     extract_between_tags_only: bool,
@@ -60,7 +60,7 @@ pub struct HtmlParser {
     encoding: String,
 
     /// Byte array with HTML will be kept here
-    html_bytes: Box<[u8]>, 
+    html_bytes: Option<Box<[u8]>>, 
 
     /// Current position pointing to byte in html_bytes
     current_position: u32,
@@ -73,4 +73,91 @@ pub struct HtmlParser {
 
     /// Entities manager
     entities: HtmlEntities,
+}
+
+impl HtmlParser {
+    pub fn new() -> HtmlParser {
+        let mut heuristics = HtmlHeuristics::new();
+        let text = DynamicString{};
+        let chunk = HtmlChunk{};
+        let tag_parser = TagParser{};
+        let encoding = "utf8".to_string();
+        let html_bytes = None;
+        let entities = HtmlEntities{};
+        let mut whitespace = [false; 256];
+
+        HtmlParser::init_whitespaces(whitespace);
+        HtmlParser::init_heuristics(&mut heuristics);
+
+        let parser = HtmlParser{
+            decode_mini_entities: false,
+            keep_raw_html: false,
+            keep_comments: true,
+            keep_scripts: true,
+            extract_between_tags_only: true,
+            mark_closed_tags_with_params_as_open: true,
+            compress_whitespace_before_tag: true,
+            heuristics: heuristics,
+            text: text,
+            chunk: chunk,
+            tag_parser: tag_parser,
+            encoding: encoding,
+            html_bytes: html_bytes,
+            current_position: 0,
+            data_length: 0,
+            entities: entities,
+            whitespace: whitespace,
+        };
+
+        parser
+    }
+
+    /// sets flags of whitespace bytes to true
+    fn init_whitespaces(mut whitespace: [bool; 256]) {
+        whitespace[9] = true;
+        whitespace[10] = true;
+        whitespace[13] = true;
+        whitespace[0x20] = true;
+    }
+
+    // init heuristics engine
+    fn init_heuristics(heuristics: &mut HtmlHeuristics) {
+        heuristics.add_tag("a", "href");
+        heuristics.add_tag("b", "");
+        heuristics.add_tag("p", "class");
+        heuristics.add_tag("i", "");
+        heuristics.add_tag("s", "");
+        heuristics.add_tag("u", "");
+
+        heuristics.add_tag("td", "align,valign,bgcolor,rowspan,colspan");
+        heuristics.add_tag("table", "border,width,cellpadding");
+        heuristics.add_tag("span", "");
+        heuristics.add_tag("option", "");
+        heuristics.add_tag("select", "");
+
+        heuristics.add_tag("tr", "");
+        heuristics.add_tag("div", "class,align");
+        heuristics.add_tag("img", "src,width,height,title,alt");
+        heuristics.add_tag("input", "");
+        heuristics.add_tag("br", "");
+        heuristics.add_tag("li", "");
+        heuristics.add_tag("ul", "");
+        heuristics.add_tag("ol", "");
+        heuristics.add_tag("hr", "");
+        heuristics.add_tag("h1", "");
+        heuristics.add_tag("h2", "");
+        heuristics.add_tag("h3", "");
+        heuristics.add_tag("h4", "");
+        heuristics.add_tag("h5", "");
+        heuristics.add_tag("h6", "");
+        heuristics.add_tag("font", "size,color");
+        heuristics.add_tag("meta", "name,content,http-equiv");
+        heuristics.add_tag("base", "href");
+        
+        // these are pretty rare
+        heuristics.add_tag("script", "");
+        heuristics.add_tag("style", "");
+        heuristics.add_tag("html", "");
+        heuristics.add_tag("body", "");
+    }
 }
