@@ -1,0 +1,17 @@
+[package]
+name = "yahap"
+version = "0.1.0"
+authors = ["shmutalov <shmutalov@gmail.com>"]
+description = "Yet another HTML parser"
+license = "MIT"
+keywords = ["parser", "html"]
+
+[lib]
+test = false
+
+[[test]]
+name = "test"
+path = "tests/test.rs"
+
+[dependencies]
+
