@@ -122,8 +122,8 @@ impl HtmlHeuristics {
 
     /// Adds tag to list of tracked tags (don't add too many, if you have got multiple same first
     /// 2 chars then duplicates won't be added, so make sure the first added tags are the MOST LIKELY to be found)
-    pub fn add_tag(&mut self, tag_name: String, attr_names: String) -> bool {
-        let tag = tag_name.to_lowercase().trim().to_string();
+    pub fn add_tag<A: ToString, B: ToString>(&mut self, tag_name: A, attr_names: B) -> bool {
+        let tag = tag_name.to_string().trim().to_lowercase().to_string();
 
         if tag.len() == 0 
             || tag.len() > 32 
@@ -139,13 +139,13 @@ impl HtmlHeuristics {
         let id = self.added_tags.len() + 1;
         let id_i16 = id as i16;
 
-        self.added_tags[&tag] = id_i16;
+        self.added_tags.insert(tag.clone(), id_i16);
 
         // remember tag string: it will be returned in case of matching
-        self.strings[id] = Some(tag);
+        self.strings[id] = Some(tag.clone());
 
         // add both lower...
-        if !self.add_tag_internal(tag, id, id*2+0) {
+        if !self.add_tag_internal(tag.clone(), id, id*2+0) {
             return false
         }
            
@@ -158,7 +158,8 @@ impl HtmlHeuristics {
         self.attr_data[id] = vec![0; 256];
 
         // now add attribute names
-        let names = attr_names.to_lowercase().split(",");
+        let lowered_attr_names = attr_names.to_string().to_lowercase();
+        let names = lowered_attr_names.split(",");
 
         for name in names {
             let att_name = name.trim().to_string();
@@ -172,7 +173,7 @@ impl HtmlHeuristics {
             let first_ch = att_name.chars().nth(0).unwrap();
 
             if self.attr_data[id][first_ch as usize] > 0
-                || self.attr_data[id][first_ch.to_uppercase().unwrap()] > 0 {
+                || self.attr_data[id][first_ch.to_uppercase().next().unwrap() as usize] > 0 {
                 continue
             }
 
@@ -180,14 +181,14 @@ impl HtmlHeuristics {
                 self.added_attributes[&att_name]
             } else {
                 let new_id = self.added_attributes.len() + 1;
-                self.added_attributes[&att_name] = new_id as i16;
-                self.attrs[new_id] = Some(att_name);
+                self.added_attributes.insert(att_name.clone(), new_id as i16);
+                self.attrs[new_id] = Some(att_name.clone());
 
                 new_id as i16
             };
 
             // add both lower...
-            self.add_attribute(att_name, id_i16, attr_id*2 + 0);
+            self.add_attribute(att_name.clone(), id_i16, attr_id*2 + 0);
 
             // ... and upper case tag values
             self.add_attribute(att_name.to_uppercase(), id_i16, attr_id*2 + 1);
@@ -203,7 +204,7 @@ impl HtmlHeuristics {
 
         let b = attr.chars().nth(0).unwrap() as u8;
 
-        self.attributes[attr_id as usize] = attr.as_bytes();
+        self.attributes[attr_id as usize].extend_from_slice(attr.as_bytes());
         self.attr_data[id as usize][b as usize] = attr_id as u8;
     }
 
@@ -212,10 +213,10 @@ impl HtmlHeuristics {
             return false
         }
 
-        self.tag_data[data_id].push(tag.as_bytes());
+        self.tag_data[data_id].extend_from_slice(tag.as_bytes());
 
-        let tag_chars = tag.chars();
-        let first_ch = tag_chars.nth(1).unwrap();
+        let mut tag_chars = tag.chars();
+        let first_ch = tag_chars.nth(0).unwrap();
 
         if tag.len() == 1 {
             let id = -1i16 * (data_id as i16);

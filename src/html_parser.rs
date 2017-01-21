@@ -78,7 +78,7 @@ pub struct HtmlParser {
 impl HtmlParser {
     pub fn new() -> HtmlParser {
         let mut heuristics = HtmlHeuristics::new();
-        let text = DynamicString{};
+        let text = DynamicString::new("".to_string());
         let chunk = HtmlChunk{};
         let tag_parser = TagParser{};
         let encoding = "utf8".to_string();
