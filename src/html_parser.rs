@@ -4,6 +4,10 @@ use html_chunk::HtmlChunk;
 use tag_parser::TagParser;
 use html_entities::HtmlEntities;
 
+use encoding::{Encoding, EncodingRef, EncoderTrap, DecoderTrap};
+use encoding::label::encoding_from_whatwg_label;
+use encoding::all::ASCII;
+
 /// Allows to parse HTML by splitting it into small token (HTMLchunks) such as tags, text, comments etc.
 /// 
 /// Do NOT create multiple instances of this class - REUSE single instance
@@ -57,7 +61,7 @@ pub struct HtmlParser {
     tag_parser: TagParser,
 
     /// Encoding used to convert binary data into string
-    encoding: String,
+    enc: EncodingRef,
 
     /// Byte array with HTML will be kept here
     html_bytes: Option<Box<[u8]>>, 
@@ -79,9 +83,8 @@ impl HtmlParser {
     pub fn new() -> HtmlParser {
         let mut heuristics = HtmlHeuristics::new();
         let text = DynamicString::new("".to_string());
-        let chunk = HtmlChunk{};
+        let chunk = HtmlChunk::new(true);
         let tag_parser = TagParser{};
-        let encoding = "utf8".to_string();
         let html_bytes = None;
         let entities = HtmlEntities{};
         let mut whitespace = [false; 256];
@@ -101,7 +104,7 @@ impl HtmlParser {
             text: text,
             chunk: chunk,
             tag_parser: tag_parser,
-            encoding: encoding,
+            enc: encoding_from_whatwg_label("utf8").unwrap(),
             html_bytes: html_bytes,
             current_position: 0,
             data_length: 0,
